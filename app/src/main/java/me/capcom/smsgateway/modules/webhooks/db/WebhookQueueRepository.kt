@@ -1,12 +1,18 @@
 package me.capcom.smsgateway.modules.webhooks.db
 
+import me.capcom.smsgateway.modules.webhooks.WebhookPayloadStorage
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
 /**
  * Repository for webhook queue operations.
  * Provides business logic and a clean API for the rest of the application.
  */
 class WebhookQueueRepository(
     private val dao: WebhookQueueDao,
-) {
+) : KoinComponent {
+    private val payloadStorage: WebhookPayloadStorage by inject()
+
     /**
      * Enqueue a new webhook event for processing.
      */
@@ -14,10 +20,12 @@ class WebhookQueueRepository(
         url: String,
         payload: String,
     ): Long {
+        val payloadRef = payloadStorage.save(payload)
+
         return dao.insertWebhook(
             WebhookQueueEntity(
                 url = url,
-                payload = payload,
+                payload = payloadRef,
                 status = WebhookStatus.PENDING,
                 createdAt = System.currentTimeMillis(),
                 nextAttempt = System.currentTimeMillis()
@@ -39,10 +47,6 @@ class WebhookQueueRepository(
         return dao.getPendingWebhooks(limit = limit)
     }
 
-    suspend fun getById(webhookId: Long): WebhookQueueEntity {
-        return dao.getById(webhookId)
-    }
-
     /**
      * Start processing a webhook by marking it as processing.
      */
@@ -54,6 +58,7 @@ class WebhookQueueRepository(
      * Complete a webhook processing successfully.
      */
     suspend fun completeWebhook(webhookId: Long) {
+        payloadStorage.delete(webhookId.toString())
         dao.markAsCompleted(id = webhookId)
     }
 
@@ -79,8 +84,8 @@ class WebhookQueueRepository(
             )
         } else {
             // Max retries exceeded, mark as permanently failed
-            dao.markAsPermanentlyFailed(
-                id = webhookId,
+            permanentlyFailWebhook(
+                webhookId = webhookId,
                 error = error ?: "Max retries exceeded",
             )
         }
@@ -90,6 +95,7 @@ class WebhookQueueRepository(
      * Permanently fail a webhook.
      */
     suspend fun permanentlyFailWebhook(webhookId: Long, error: String) {
+        payloadStorage.delete(webhookId.toString())
         dao.markAsPermanentlyFailed(
             id = webhookId,
             error = error
@@ -127,11 +133,4 @@ class WebhookQueueRepository(
  */
 fun WebhookQueueEntity.canRetry(maxRetries: Int = 3): Boolean {
     return retryCount < maxRetries && status != WebhookStatus.PERMANENTLY_FAILED
-}
-
-/**
- * Extension function to check if webhook is in processing state.
- */
-fun WebhookQueueEntity.isProcessing(): Boolean {
-    return WebhookStatus.isProcessing(status)
 }

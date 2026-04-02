@@ -35,12 +35,7 @@ class WebhookPayloadStorage(
         return file.readText()
     }
 
-    fun delete(payloadRef: String) {
-        if (!payloadRef.startsWith(FILE_REF_PREFIX)) {
-            return
-        }
-
-        val key = payloadRef.removePrefix(FILE_REF_PREFIX)
+    fun delete(key: String) {
         val file = File(payloadDir, key)
         if (file.exists()) {
             file.delete()

@@ -39,7 +39,6 @@ import me.capcom.smsgateway.modules.webhooks.WebhookPayloadStorage
 import me.capcom.smsgateway.modules.webhooks.WebhooksSettings
 import me.capcom.smsgateway.modules.webhooks.db.WebhookQueueEntity
 import me.capcom.smsgateway.modules.webhooks.db.WebhookQueueRepository
-import me.capcom.smsgateway.modules.webhooks.db.WebhookStatus
 import me.capcom.smsgateway.modules.webhooks.plugins.PayloadSingingPlugin
 import org.json.JSONException
 import org.koin.core.component.KoinComponent
@@ -247,7 +246,6 @@ class WebhookQueueProcessorWorker(
                         if (success) {
                             // Mark as completed
                             webhookRepository.completeWebhook(webhook.id)
-                            payloadStorage.delete(webhook.payload)
                             processedCount++
                         } else {
                             // Schedule retry
@@ -386,10 +384,6 @@ class WebhookQueueProcessorWorker(
                 maxRetries = settings.retryCount,
                 baseDelayMs = MIN_BACKOFF_DELAY_MS
             )
-            val updated = webhookRepository.getById(webhookId)
-            if (updated.status == WebhookStatus.PERMANENTLY_FAILED) {
-                payloadStorage.delete(updated.payload)
-            }
         } catch (e: Exception) {
             logsSvc.insert(
                 priority = LogEntry.Priority.ERROR,
@@ -402,9 +396,7 @@ class WebhookQueueProcessorWorker(
                 )
             )
             // If retry scheduling fails, mark as permanently failed
-            val webhook = webhookRepository.getById(webhookId)
             webhookRepository.permanentlyFailWebhook(webhookId, error ?: "Unknown error")
-            payloadStorage.delete(webhook.payload)
         }
     }
 
