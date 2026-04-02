@@ -35,9 +35,11 @@ import me.capcom.smsgateway.modules.logs.LogsService
 import me.capcom.smsgateway.modules.logs.db.LogEntry
 import me.capcom.smsgateway.modules.notifications.NotificationsService
 import me.capcom.smsgateway.modules.webhooks.NAME
+import me.capcom.smsgateway.modules.webhooks.WebhookPayloadStorage
 import me.capcom.smsgateway.modules.webhooks.WebhooksSettings
 import me.capcom.smsgateway.modules.webhooks.db.WebhookQueueEntity
 import me.capcom.smsgateway.modules.webhooks.db.WebhookQueueRepository
+import me.capcom.smsgateway.modules.webhooks.db.WebhookStatus
 import me.capcom.smsgateway.modules.webhooks.plugins.PayloadSingingPlugin
 import org.json.JSONException
 import org.koin.core.component.KoinComponent
@@ -57,6 +59,7 @@ class WebhookQueueProcessorWorker(
     private val notificationsSvc: NotificationsService by inject()
     private val logsSvc: LogsService by inject()
     private val webhookRepository: WebhookQueueRepository by inject()
+    private val payloadStorage: WebhookPayloadStorage by inject()
     private val settings: WebhooksSettings by inject()
 
     companion object {
@@ -244,6 +247,7 @@ class WebhookQueueProcessorWorker(
                         if (success) {
                             // Mark as completed
                             webhookRepository.completeWebhook(webhook.id)
+                            payloadStorage.delete(webhook.payload)
                             processedCount++
                         } else {
                             // Schedule retry
@@ -296,7 +300,8 @@ class WebhookQueueProcessorWorker(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val url = webhook.url
-                val data = gson.fromJson(webhook.payload, JsonObject::class.java)
+                val payload = payloadStorage.read(webhook.payload) ?: return@withContext false
+                val data = gson.fromJson(payload, JsonObject::class.java)
                     ?: return@withContext false
 
                 val response = client.post(url) {
@@ -381,6 +386,10 @@ class WebhookQueueProcessorWorker(
                 maxRetries = settings.retryCount,
                 baseDelayMs = MIN_BACKOFF_DELAY_MS
             )
+            val updated = webhookRepository.getById(webhookId)
+            if (updated.status == WebhookStatus.PERMANENTLY_FAILED) {
+                payloadStorage.delete(updated.payload)
+            }
         } catch (e: Exception) {
             logsSvc.insert(
                 priority = LogEntry.Priority.ERROR,
@@ -393,7 +402,9 @@ class WebhookQueueProcessorWorker(
                 )
             )
             // If retry scheduling fails, mark as permanently failed
+            val webhook = webhookRepository.getById(webhookId)
             webhookRepository.permanentlyFailWebhook(webhookId, error ?: "Unknown error")
+            payloadStorage.delete(webhook.payload)
         }
     }
 

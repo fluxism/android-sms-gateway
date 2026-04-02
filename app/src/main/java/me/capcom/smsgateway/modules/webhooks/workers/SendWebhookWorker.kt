@@ -35,6 +35,7 @@ import me.capcom.smsgateway.modules.logs.db.LogEntry
 import me.capcom.smsgateway.modules.notifications.NotificationsService
 import me.capcom.smsgateway.modules.webhooks.NAME
 import me.capcom.smsgateway.modules.webhooks.TemporaryStorage
+import me.capcom.smsgateway.modules.webhooks.WebhookPayloadStorage
 import me.capcom.smsgateway.modules.webhooks.WebhooksSettings
 import me.capcom.smsgateway.modules.webhooks.db.WebhookQueueRepository
 import me.capcom.smsgateway.modules.webhooks.domain.WebHookEventDTO
@@ -220,12 +221,14 @@ class SendWebhookWorker(appContext: Context, params: WorkerParameters) :
             // Enqueue the webhook event to the persistent queue
             try {
                 val queueRepository = get<WebhookQueueRepository>()
+                val payloadStorage = get<WebhookPayloadStorage>()
+                val payloadRef = payloadStorage.save(gson.toJson(data))
 
                 // Enqueue to the persistent queue
                 val queueId = runBlocking {
                     queueRepository.enqueueWebhook(
                         url = url,
-                        payload = gson.toJson(data),
+                        payload = payloadRef,
                     )
                 }
 

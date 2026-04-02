@@ -39,6 +39,10 @@ class WebhookQueueRepository(
         return dao.getPendingWebhooks(limit = limit)
     }
 
+    suspend fun getById(webhookId: Long): WebhookQueueEntity {
+        return dao.getById(webhookId)
+    }
+
     /**
      * Start processing a webhook by marking it as processing.
      */
