@@ -12,7 +12,7 @@ interface WebhookQueueDao {
      * Insert a new webhook event into the queue.
      */
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertWebhook(webhook: WebhookQueueEntity): Long
+    suspend fun insertWebhook(webhook: WebhookQueueEntity)
 
     /**
      * Get webhook by id.

@@ -20,11 +20,11 @@ class WebhookQueueRepository(
     suspend fun enqueueWebhook(
         url: String,
         payload: String,
-    ): Long {
+    ): String {
         val id = NanoIdUtils.randomNanoId()
         val payloadRef = payloadStorage.save(id, payload)
 
-        return dao.insertWebhook(
+        dao.insertWebhook(
             WebhookQueueEntity(
                 id = id,
                 url = url,
@@ -34,6 +34,8 @@ class WebhookQueueRepository(
                 nextAttempt = System.currentTimeMillis()
             )
         )
+
+        return id
     }
 
     /**
