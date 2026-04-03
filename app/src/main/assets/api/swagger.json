@@ -659,6 +659,15 @@
       },
       "smsgateway.MessageState": {
         "properties": {
+          "dataMessage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/smsgateway.DataMessage"
+              }
+            ],
+            "description": "Present only when `includeContent=true` and the message type is data.",
+            "type": "object"
+          },
           "deviceId": {
             "description": "Device ID",
             "example": "PyDmBQZZXYmyxMwED8Fzy",
@@ -698,6 +707,15 @@
             "description": "State",
             "example": "Pending",
             "type": "string"
+          },
+          "textMessage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/smsgateway.TextMessage"
+              }
+            ],
+            "description": "Present only when `includeContent=true` and the message type is text.",
+            "type": "object"
           },
           "states": {
             "additionalProperties": {
@@ -1683,6 +1701,15 @@
             "schema": {
               "default": 0,
               "type": "integer"
+            }
+          },
+          {
+            "description": "Include message payload (`textMessage` or `dataMessage`) in each item. Disabled by default to keep list responses lightweight.",
+            "in": "query",
+            "name": "includeContent",
+            "schema": {
+              "default": false,
+              "type": "boolean"
             }
           }
         ],
