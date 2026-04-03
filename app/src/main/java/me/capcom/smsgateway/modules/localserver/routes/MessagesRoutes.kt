@@ -15,10 +15,15 @@ import me.capcom.smsgateway.domain.EntitySource
 import me.capcom.smsgateway.domain.MessageContent
 import me.capcom.smsgateway.domain.ProcessingState
 import me.capcom.smsgateway.helpers.DateTimeParser
+import me.capcom.smsgateway.modules.incoming.IncomingMessagesService
+import me.capcom.smsgateway.modules.incoming.db.IncomingMessage
+import me.capcom.smsgateway.modules.incoming.db.IncomingMessageType
 import me.capcom.smsgateway.modules.localserver.LocalServerSettings
 import me.capcom.smsgateway.modules.localserver.auth.AuthScopes
 import me.capcom.smsgateway.modules.localserver.auth.requireScope
+import me.capcom.smsgateway.modules.localserver.domain.GetIncomingMessagesResponse
 import me.capcom.smsgateway.modules.localserver.domain.GetMessageResponse
+import me.capcom.smsgateway.modules.localserver.domain.IncomingMessageResponse
 import me.capcom.smsgateway.modules.localserver.domain.PostMessageRequest
 import me.capcom.smsgateway.modules.localserver.domain.PostMessageResponse
 import me.capcom.smsgateway.modules.localserver.domain.PostMessagesInboxExportRequest
@@ -33,6 +38,7 @@ class MessagesRoutes(
     private val context: Context,
     private val messagesService: MessagesService,
     private val receiverService: ReceiverService,
+    private val incomingMessagesService: IncomingMessagesService,
     private val settings: LocalServerSettings,
 ) {
     fun register(routing: Route) {
@@ -289,6 +295,97 @@ class MessagesRoutes(
     }
 
     private fun Route.inboxRoutes(context: Context) {
+        get {
+            if (!requireScope(AuthScopes.MessagesReadInbox)) return@get
+
+            val type = call.request.queryParameters["type"]?.takeIf { it.isNotEmpty() }
+                ?.let { IncomingMessageType.valueOf(it) }
+            val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 50
+            val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
+
+            if (limit !in 1..500) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "limit must be between 1 and 500")
+                )
+                return@get
+            }
+
+            if (offset < 0) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "offset must be >= 0")
+                )
+                return@get
+            }
+
+            val from = call.request.queryParameters["from"]?.let {
+                DateTimeParser.parseIsoDateTime(it)?.time
+            } ?: 0
+            val to = call.request.queryParameters["to"]?.let {
+                DateTimeParser.parseIsoDateTime(it)?.time
+            } ?: Date().time
+
+            val deviceId = call.request.queryParameters["deviceId"]
+            if (deviceId != null && deviceId != settings.deviceId) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "Invalid device ID")
+                )
+                return@get
+            }
+
+            if (from > to) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "Start date cannot be after end date")
+                )
+                return@get
+            }
+
+            val total = try {
+                incomingMessagesService.count(type, from, to)
+            } catch (e: Throwable) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf("message" to "Failed to count incoming messages: ${e.message}")
+                )
+                return@get
+            }
+
+            val messages = try {
+                incomingMessagesService.select(type, from, to, limit, offset)
+            } catch (e: Throwable) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf("message" to "Failed to retrieve incoming messages: ${e.message}")
+                )
+                return@get
+            }
+
+            call.response.headers.append("X-Total-Count", total.toString())
+
+            call.respond(messages.map { it.toDomain() } as GetIncomingMessagesResponse)
+        }
+
+        get("{id}") {
+            if (!requireScope(AuthScopes.MessagesReadInbox)) return@get
+            val id = call.parameters["id"]
+                ?: return@get call.respond(HttpStatusCode.BadRequest)
+
+            val message = try {
+                incomingMessagesService.getById(id)
+                    ?: return@get call.respond(HttpStatusCode.NotFound)
+            } catch (e: Throwable) {
+                return@get call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf("message" to e.message)
+                )
+            }
+
+            call.respond(message.toDomain())
+        }
+
         post("export") {
             if (!requireScope(AuthScopes.MessagesExport)) return@post
             val request = call.receive<PostMessagesInboxExportRequest>().validate()
@@ -303,6 +400,18 @@ class MessagesRoutes(
             }
         }
     }
+
+
+    private fun IncomingMessage.toDomain() = IncomingMessageResponse(
+        id = id,
+        type = type,
+        sender = sender,
+        recipient = recipient,
+        simNumber = simNumber,
+        subscriptionId = subscriptionId,
+        contentPreview = contentPreview,
+        createdAt = Date(createdAt),
+    )
 
     private fun MessageWithRecipients.toDomain(deviceId: String) =
         me.capcom.smsgateway.modules.localserver.domain.Message(

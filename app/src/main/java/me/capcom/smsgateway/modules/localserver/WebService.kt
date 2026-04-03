@@ -169,7 +169,7 @@ class WebService : Service() {
                             call.respond(listOf(device))
                         }
                     }
-                    MessagesRoutes(applicationContext, get(), get(), get()).let {
+                    MessagesRoutes(applicationContext, get(), get(), get(), get()).let {
                         route("/message") {
                             it.register(this)
                         }

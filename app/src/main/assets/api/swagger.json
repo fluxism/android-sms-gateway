@@ -878,6 +878,52 @@
         ],
         "type": "object"
       },
+      "smsgateway.IncomingMessage": {
+        "properties": {
+          "contentPreview": {
+            "description": "Message body preview or metadata",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "Message received timestamp",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Incoming message ID",
+            "type": "string"
+          },
+          "recipient": {
+            "description": "Recipient phone number on the device",
+            "nullable": true,
+            "type": "string"
+          },
+          "sender": {
+            "description": "Incoming sender phone number",
+            "type": "string"
+          },
+          "simNumber": {
+            "description": "SIM slot number",
+            "nullable": true,
+            "type": "integer"
+          },
+          "subscriptionId": {
+            "description": "Android subscription ID",
+            "nullable": true,
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "SMS",
+              "DATA_SMS",
+              "MMS",
+              "MMS_DOWNLOADED"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "smsgateway.TokenRequest": {
         "properties": {
           "scopes": {
@@ -1948,6 +1994,233 @@
           }
         ],
         "summary": "Get message state",
+        "tags": [
+          "User",
+          "Messages"
+        ]
+      }
+    },
+    "/messages/inbox": {
+      "get": {
+        "description": "Retrieves incoming messages with filtering and pagination.",
+        "parameters": [
+          {
+            "description": "Filter incoming messages by type",
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "enum": [
+                "SMS",
+                "DATA_SMS",
+                "MMS",
+                "MMS_DOWNLOADED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum number of messages to return",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of messages to skip",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Start of date range (ISO 8601)",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End of date range (ISO 8601)",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Device ID",
+            "in": "query",
+            "name": "deviceId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/smsgateway.IncomingMessage"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "A list of incoming messages"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiAuth": []
+          },
+          {
+            "JWTAuth": []
+          }
+        ],
+        "summary": "Get incoming messages",
+        "tags": [
+          "User",
+          "Messages"
+        ]
+      }
+    },
+    "/messages/inbox/{id}": {
+      "get": {
+        "description": "Retrieves a single incoming message by id.",
+        "parameters": [
+          {
+            "description": "Incoming message ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.IncomingMessage"
+                }
+              }
+            },
+            "description": "Incoming message"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/smsgateway.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiAuth": []
+          },
+          {
+            "JWTAuth": []
+          }
+        ],
+        "summary": "Get incoming message",
         "tags": [
           "User",
           "Messages"
