@@ -2,7 +2,6 @@ package me.capcom.smsgateway.modules.webhooks
 
 import android.content.Context
 import java.io.File
-import java.util.UUID
 
 class WebhookPayloadStorage(
     context: Context,
@@ -13,8 +12,7 @@ class WebhookPayloadStorage(
         }
     }
 
-    fun save(payload: String): String {
-        val key = UUID.randomUUID().toString()
+    fun save(key: String, payload: String): String {
         val file = File(payloadDir, key)
         file.writeText(payload)
         return FILE_REF_PREFIX + key

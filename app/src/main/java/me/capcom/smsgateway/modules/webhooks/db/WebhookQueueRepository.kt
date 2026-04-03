@@ -1,5 +1,6 @@
 package me.capcom.smsgateway.modules.webhooks.db
 
+import com.aventrix.jnanoid.jnanoid.NanoIdUtils
 import me.capcom.smsgateway.modules.webhooks.WebhookPayloadStorage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -20,10 +21,12 @@ class WebhookQueueRepository(
         url: String,
         payload: String,
     ): Long {
-        val payloadRef = payloadStorage.save(payload)
+        val id = NanoIdUtils.randomNanoId()
+        val payloadRef = payloadStorage.save(id, payload)
 
         return dao.insertWebhook(
             WebhookQueueEntity(
+                id = id,
                 url = url,
                 payload = payloadRef,
                 status = WebhookStatus.PENDING,
@@ -50,15 +53,15 @@ class WebhookQueueRepository(
     /**
      * Start processing a webhook by marking it as processing.
      */
-    suspend fun startProcessing(webhookId: Long) {
+    suspend fun startProcessing(webhookId: String) {
         dao.markAsProcessing(id = webhookId)
     }
 
     /**
      * Complete a webhook processing successfully.
      */
-    suspend fun completeWebhook(webhookId: Long) {
-        payloadStorage.delete(webhookId.toString())
+    suspend fun completeWebhook(webhookId: String) {
+        payloadStorage.delete(webhookId)
         dao.markAsCompleted(id = webhookId)
     }
 
@@ -66,7 +69,7 @@ class WebhookQueueRepository(
      * Mark webhook as failed and schedule retry.
      */
     suspend fun scheduleRetry(
-        webhookId: Long,
+        webhookId: String,
         error: String?,
         maxRetries: Int = 3,
         baseDelayMs: Long = 5000L
@@ -94,7 +97,7 @@ class WebhookQueueRepository(
     /**
      * Permanently fail a webhook.
      */
-    suspend fun permanentlyFailWebhook(webhookId: Long, error: String) {
+    suspend fun permanentlyFailWebhook(webhookId: String, error: String) {
         payloadStorage.delete(webhookId.toString())
         dao.markAsPermanentlyFailed(
             id = webhookId,

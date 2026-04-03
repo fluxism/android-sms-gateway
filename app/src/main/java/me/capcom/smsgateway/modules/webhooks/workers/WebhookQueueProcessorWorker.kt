@@ -376,7 +376,7 @@ class WebhookQueueProcessorWorker(
     /**
      * Handle webhook failure and schedule retry if appropriate.
      */
-    private suspend fun handleWebhookFailure(webhookId: Long, error: String?) {
+    private suspend fun handleWebhookFailure(webhookId: String, error: String?) {
         try {
             webhookRepository.scheduleRetry(
                 webhookId = webhookId,
