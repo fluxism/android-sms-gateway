@@ -176,4 +176,32 @@
     <string name="language">Language</string>
     <string name="language_system">System default</string>
     <string name="password_must_not_be_empty">Password must not be empty</string>
+
+    <string name="cloud_webhooks_title">Cloud Webhooks</string>
+    <string name="cloud_webhooks_manage_title">Manage cloud webhooks</string>
+    <string name="cloud_webhooks_manage_summary">Create, list, and delete webhooks on the cloud server</string>
+    <string name="cloud_webhooks_empty">No cloud webhooks</string>
+    <string name="cloud_webhooks_empty_hint">Tap the button below to register a new webhook.</string>
+    <string name="cloud_webhooks_not_registered">Device is not registered on the cloud server.</string>
+    <string name="cloud_webhooks_load_failed">Could not load webhooks: %1$s</string>
+    <plurals name="cloud_webhooks_count">
+        <item quantity="one">%1$d webhook registered</item>
+        <item quantity="other">%1$d webhooks registered</item>
+    </plurals>
+    <string name="add_webhook">Add webhook</string>
+    <string name="add_webhook_hint">Register a webhook URL on the cloud server. Authentication uses the cloud credentials from the Cloud server settings.</string>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
+    <string name="refresh">Refresh</string>
+    <string name="retry">Retry</string>
+    <string name="webhook_url">Webhook URL</string>
+    <string name="webhook_event">Event</string>
+    <string name="webhook_url_required">URL is required</string>
+    <string name="webhook_event_required">Select an event</string>
+    <string name="webhook_created">Webhook registered</string>
+    <string name="webhook_create_failed">Failed to register webhook: %1$s</string>
+    <string name="webhook_deleted">Webhook deleted</string>
+    <string name="webhook_delete_failed">Failed to delete webhook: %1$s</string>
+    <string name="delete_webhook">Delete webhook</string>
+    <string name="delete_webhook_confirm">Are you sure you want to delete the webhook for %1$s?</string>
 </resources>

@@ -7,6 +7,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -103,6 +104,32 @@ class GatewayApi(
         return client.get("$baseUrl/webhooks") {
             bearerAuth(token)
         }.body()
+    }
+
+    private val thirdPartyBaseUrl: String
+        get() = baseUrl.replace("/mobile/v1", "/3rdparty/v1")
+
+    suspend fun listCloudWebhooks(credentials: Pair<String, String>): List<WebHook> {
+        return client.get("$thirdPartyBaseUrl/webhooks") {
+            basicAuth(credentials.first, credentials.second)
+        }.body()
+    }
+
+    suspend fun createCloudWebhook(
+        credentials: Pair<String, String>,
+        request: CloudWebhookRequest,
+    ): WebHook {
+        return client.post("$thirdPartyBaseUrl/webhooks") {
+            basicAuth(credentials.first, credentials.second)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun deleteCloudWebhook(credentials: Pair<String, String>, id: String) {
+        client.delete("$thirdPartyBaseUrl/webhooks/$id") {
+            basicAuth(credentials.first, credentials.second)
+        }
     }
 
     suspend fun getUserCode(credentials: Pair<String, String>): GetUserCodeResponse {
@@ -241,6 +268,11 @@ class GatewayApi(
 
     data class WebHook(
         val id: String,
+        val url: String,
+        val event: WebHookEvent,
+    )
+
+    data class CloudWebhookRequest(
         val url: String,
         val event: WebHookEvent,
     )

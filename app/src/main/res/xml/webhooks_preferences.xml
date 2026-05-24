@@ -27,4 +27,10 @@
         app:fragment="me.capcom.smsgateway.ui.settings.WebhooksListFragment"
         app:summary="@string/webhook_list_summary"
         app:title="@string/webhook_list_title" />
+
+    <Preference
+        android:icon="@drawable/ic_cloud_server"
+        app:fragment="me.capcom.smsgateway.ui.settings.CloudWebhooksFragment"
+        app:summary="@string/cloud_webhooks_manage_summary"
+        app:title="@string/cloud_webhooks_manage_title" />
 </androidx.preference.PreferenceScreen>

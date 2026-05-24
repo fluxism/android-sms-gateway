@@ -20,6 +20,7 @@ import me.capcom.smsgateway.modules.messages.MessagesService
 import me.capcom.smsgateway.modules.messages.MessagesSettings
 import me.capcom.smsgateway.modules.messages.data.SendParams
 import me.capcom.smsgateway.modules.messages.data.SendRequest
+import me.capcom.smsgateway.modules.webhooks.domain.WebHookEvent
 import me.capcom.smsgateway.services.PushService
 import java.util.Date
 
@@ -299,6 +300,29 @@ class GatewayService(
         } else {
             emptyList()
         }
+    }
+
+    private fun requireCredentials(): Pair<String, String> {
+        val info = settings.registrationInfo
+            ?: throw IllegalStateException("Device is not registered on the cloud server")
+        val password = info.password
+            ?: throw IllegalStateException("Password is not available on this device")
+        return info.login to password
+    }
+
+    suspend fun listCloudWebhooks(): List<GatewayApi.WebHook> {
+        return api.listCloudWebhooks(requireCredentials())
+    }
+
+    suspend fun createCloudWebhook(url: String, event: WebHookEvent): GatewayApi.WebHook {
+        return api.createCloudWebhook(
+            requireCredentials(),
+            GatewayApi.CloudWebhookRequest(url, event),
+        )
+    }
+
+    suspend fun deleteCloudWebhook(id: String) {
+        api.deleteCloudWebhook(requireCredentials(), id)
     }
     //endregion
 
