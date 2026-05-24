@@ -595,14 +595,14 @@ class MessagesService(
     private fun mmsErrorToMessage(resultCode: Int): String {
         return when (resultCode) {
             Activity.RESULT_OK -> "OK"
-            SmsManager.MMS_ERROR_UNSPECIFIED -> "MMS_ERROR_UNSPECIFIED"
-            SmsManager.MMS_ERROR_INVALID_APN -> "MMS_ERROR_INVALID_APN"
-            SmsManager.MMS_ERROR_UNABLE_CONNECT_MMS -> "MMS_ERROR_UNABLE_CONNECT_MMS"
-            SmsManager.MMS_ERROR_HTTP_FAILURE -> "MMS_ERROR_HTTP_FAILURE"
-            SmsManager.MMS_ERROR_IO_ERROR -> "MMS_ERROR_IO_ERROR"
-            SmsManager.MMS_ERROR_RETRY -> "MMS_ERROR_RETRY"
-            SmsManager.MMS_ERROR_CONFIGURATION_ERROR -> "MMS_ERROR_CONFIGURATION_ERROR"
-            SmsManager.MMS_ERROR_NO_DATA_NETWORK -> "MMS_ERROR_NO_DATA_NETWORK"
+            SmsManager.MMS_ERROR_UNSPECIFIED -> "MMS_ERROR_UNSPECIFIED (An unspecified error occurred)"
+            SmsManager.MMS_ERROR_INVALID_APN -> "MMS_ERROR_INVALID_APN (The APN is invalid)"
+            SmsManager.MMS_ERROR_UNABLE_CONNECT_MMS -> "MMS_ERROR_UNABLE_CONNECT_MMS (Unable to connect to the MMS service)"
+            SmsManager.MMS_ERROR_HTTP_FAILURE -> "MMS_ERROR_HTTP_FAILURE (HTTP failure during MMS transfer)"
+            SmsManager.MMS_ERROR_IO_ERROR -> "MMS_ERROR_IO_ERROR (An I/O error occurred)"
+            SmsManager.MMS_ERROR_RETRY -> "MMS_ERROR_RETRY (The carrier indicated a retry is needed)"
+            SmsManager.MMS_ERROR_CONFIGURATION_ERROR -> "MMS_ERROR_CONFIGURATION_ERROR (MMS configuration error)"
+            SmsManager.MMS_ERROR_NO_DATA_NETWORK -> "MMS_ERROR_NO_DATA_NETWORK (No data network available)"
             else -> "Unknown MMS error: $resultCode"
         }
     }
