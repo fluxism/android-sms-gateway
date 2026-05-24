@@ -360,12 +360,7 @@ class MessagesService(
         } else content
 
         val recipients = message.phoneNumbers.map { source ->
-            val phone = if (message.isEncrypted) encryptionService.decrypt(source) else source
-            if (request.params.skipPhoneValidation) {
-                phone.filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
-            } else {
-                PhoneHelper.filterPhoneNumber(phone, countryCode ?: "US")
-            }
+            decryptAndNormalizePhone(source, message.isEncrypted, request.params.skipPhoneValidation)
         }
 
         dao.updatePartsCount(id, 1 + decryptedContent.attachments.size)
@@ -535,14 +530,9 @@ class MessagesService(
                 }
 
                 try {
-                    val phoneNumber = when (message.isEncrypted) {
-                        true -> encryptionService.decrypt(sourcePhoneNumber)
-                        false -> sourcePhoneNumber
-                    }
-                    val normalizedPhoneNumber = when (request.params.skipPhoneValidation) {
-                        true -> phoneNumber.filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
-                        false -> PhoneHelper.filterPhoneNumber(phoneNumber, countryCode ?: "RU")
-                    }
+                    val normalizedPhoneNumber = decryptAndNormalizePhone(
+                        sourcePhoneNumber, message.isEncrypted, request.params.skipPhoneValidation,
+                    )
 
                     sendFn(normalizedPhoneNumber, sentIntent, deliveredIntent)
 
@@ -614,6 +604,19 @@ class MessagesService(
             SmsManager.MMS_ERROR_CONFIGURATION_ERROR -> "MMS_ERROR_CONFIGURATION_ERROR"
             SmsManager.MMS_ERROR_NO_DATA_NETWORK -> "MMS_ERROR_NO_DATA_NETWORK"
             else -> "Unknown MMS error: $resultCode"
+        }
+    }
+
+    private fun decryptAndNormalizePhone(
+        source: String,
+        isEncrypted: Boolean,
+        skipValidation: Boolean,
+    ): String {
+        val phone = if (isEncrypted) encryptionService.decrypt(source) else source
+        return if (skipValidation) {
+            phone.filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
+        } else {
+            PhoneHelper.filterPhoneNumber(phone, countryCode ?: "RU")
         }
     }
 
